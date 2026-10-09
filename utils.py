@@ -1,6 +1,7 @@
 import os
 import json
 import re
+import html as html_lib
 from datetime import datetime
 
 PROMPT_FILE = "prompt.txt"
@@ -69,7 +70,7 @@ def build_modern_html_report(json_data_input):
     if not isinstance(data, list):
         return f"""
         <div style="padding: 15px; background-color: #fee2e2; border: 1px solid #f87171; border-radius: 8px; color: #991b1b; font-family: sans-serif;">
-            ⚠️ <strong>Error en el formato del análisis:</strong> No se pudo estructurar el informe correctamente.
+            <strong>Error en el formato del análisis:</strong> No se pudo estructurar el informe correctamente.
         </div>
         """
 
@@ -233,6 +234,42 @@ def estimate_report_height(report_html, chars_per_line=100, line_px=21, row_padd
         total += lines * line_px + row_padding
     return max(min_px, total)
 
+
+def report_to_text(report_html):
+    """
+    Convierte el HTML del informe en texto plano compacto (una linea por documento)
+    para pasarlo como contexto al chat sin enviar CSS ni etiquetas.
+    """
+    if not isinstance(report_html, str):
+        return str(report_html)
+
+    def clean(s):
+        return re.sub(r"\s+", " ", html_lib.unescape(re.sub(r"<[^>]+>", " ", s))).strip()
+
+    rows = re.findall(
+        r'<tr>\s*<td class="doc-title">(.*?)</td>\s*<td><span class="badge[^"]*">(.*?)</span></td>\s*<td>(.*?)</td>\s*</tr>',
+        report_html, flags=re.S)
+    if rows:
+        return "\n".join(f"- {clean(c)}: {clean(s)}. {clean(m)}" for c, s, m in rows)
+
+    text = re.sub(r"<style.*?</style>|<script.*?</script>", " ", report_html, flags=re.S)
+    return clean(text)
+
+def update_analysis_details(record_id, part_number, project_name, vendor):
+    """Actualiza part number, proyecto y vendor de un registro del historial."""
+    history = load_history()
+    updated = False
+    for item in history:
+        if item.get("id") == record_id:
+            item["part_number"] = part_number.strip()
+            item["project_name"] = project_name.strip()
+            item["vendor"] = vendor.strip()
+            updated = True
+            break
+    if updated:
+        with open(HISTORY_FILE, "w", encoding="utf-8") as f:
+            json.dump(history, f, ensure_ascii=False, indent=4)
+    return updated
 
 def load_system_prompt(part_number, project_name, vendor):
     if not os.path.exists(PROMPT_FILE):
