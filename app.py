@@ -23,12 +23,23 @@ from utils import (
 MODEL_NAME = "gemini-3.5-flash"
 MAX_AUDIT_SECONDS = 600          # tiempo maximo de espera de una auditoria
 CHAT_HEIGHT = 480                # alto de la zona de mensajes del chat (px)
-CHAT_SUGGESTIONS = [
-    "Write an email to the seller requesting the missing paperwork and corrections",
-    "Summarize the discrepancies found in this audit",
-    "Which documents are missing or incomplete?",
-]
-PAGES = ["New Analysis", "Saved Analyses / History"]
+EMAIL_SUGGESTION = "Write an email to the seller requesting the missing paperwork"
+CHAT_SUGGESTIONS = [EMAIL_SUGGESTION]
+
+EMAIL_PROMPT_TEMPLATE = """You are an expert technical aviation records auditor drafting an email to a vendor requesting missing or corrected documentation based on an audit result. Write the email in English.
+Your goal: Extract ONLY actionable findings (discrepancies, missing documents, commercial trace gaps, or missing tags) and present them in a clear, bulleted request for the vendor.
+
+STRICT RULES:
+1. NO conversational filler, intros, or outros (do NOT write greetings like "Dear Vendor", "Hope this finds you well", or "Best regards").
+2. DO NOT mention or summarize items that were compliant, verified, or marked "Yes". Focus strictly on findings marked as "Discrepancy", "Incomplete", or "No" (document not provided). 
+3. Group findings dynamically by the identifier used in the audit (e.g., ESN / Quantity, Part Number, Document type, or Batch) if applicable. If no specific grouping exists, list them directly.
+4. Keep bullet points direct, concise, and professional, specifying exactly what document is needed, what discrepancy needs clarification, or what commercial trace link is missing.
+
+AUDIT RESULT TO PROCESS:
+{audit_result_text}
+"""
+
+PAGES = ["New Analysis", "Saved Analyses"]
 
 # --- CONFIGURACION DE PAGINA ---
 st.set_page_config(
@@ -564,9 +575,14 @@ def render_audit_chat(client, files_payload_list, report_html, part_number, vend
             with st.chat_message("assistant"):
                 answer = ""
                 try:
-                    prompt_text = build_chat_prompt(
-                        part_number, vendor, report_to_text(report_html), history_before, prompt
-                    )
+                    if prompt == EMAIL_SUGGESTION:
+                        prompt_text = EMAIL_PROMPT_TEMPLATE.format(
+                            audit_result_text=report_to_text(report_html)
+                        )
+                    else:
+                        prompt_text = build_chat_prompt(
+                            part_number, vendor, report_to_text(report_html), history_before, prompt
+                        )
                     stream = chat_stream(client, files_payload_list, chat_id, prompt_text)
                     with st.spinner("Thinking..."):
                         first = next(stream, None)
@@ -790,8 +806,7 @@ else:
             if st.button("Delete", key="delete_audit", use_container_width=True):
                 confirm_delete_dialog(rid, f"{record['project_name']} | P/N {record['part_number']}")
 
-        st.caption(f"**Documents:** {', '.join(record.get('filenames', [])) or 'none'}")
-
+        
         # ---------- Editar datos ----------
         with st.expander("Edit details", expanded=False):
             e1, e2, e3 = st.columns(3)
