@@ -857,8 +857,8 @@ else:
                 accept_multiple_files=True,
                 key=f"extra_files_{rid}_{gen}"
             )
-
-            if st.button("Re-run Analysis Now", type="primary", key=f"rerun_{rid}", use_container_width=True):
+            st.caption("This replaces the saved report with a new analysis of the documents selected above.")
+            if st.button("Re-run Analysis", type="primary", key=f"rerun_{rid}", use_container_width=True):
                 system_prompt = load_system_prompt(
                     record["part_number"], record["project_name"], record.get("vendor", "N/A")
                 )
