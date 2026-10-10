@@ -37,10 +37,7 @@ Quality Checklist for Purchase Orders (Engine Parts - Non-LLP)
     - Assign 'Discrepancy' if entity names, dates, or engine/part serial numbers conflict along the chain.
     - Assign 'Yes' ONLY if every single ownership transfer from the last operator to '{vendor}' is fully supported by documentation.
 
-6. Delivery Document (ATA Spec 106)
-• Is the final link in the commercial traceability. It is issued by the vendor to our entity after the transaction/payment is formalized.
-
-7. Final Verification of Document Consistency (Cross-Check)
+6. Final Verification of Document Consistency (Cross-Check)
 • Cross-Check: Perform a final cross-check between 8130-3/Form 1, Removal Tag, Workshop Report, NIS/ICS, and Commercial Trace to guarantee total consistency among:
   - Part Number (PN)
   - Serial Number (SN)
@@ -56,15 +53,15 @@ Audit the provided documentation for Part Number: '{part_number}' under Project:
 
 ### OUTPUT RULES
 
-Evaluate the paperwork strictly across these 6 categories (rows), in this exact order:
+Evaluate the paperwork strictly across these 5 categories (rows), in this exact order:
 1. Certificates
 2. Removal Tag
 3. Workshop Report
 4. NIS/ICS
 5. Commercial Trace
-6. ATA Spec 106
 
-You MUST respond with a single valid JSON array containing EXACTLY 6 objects, one per category, in the order above.
+
+You MUST respond with a single valid JSON array containing EXACTLY 5 objects, one per category, in the order above.
 Each object has EXACTLY these three string fields:
 - "category": the category name exactly as written in the list above.
 - "status": EXACTLY one of the four status values defined below.
@@ -95,8 +92,7 @@ EXAMPLE OF THE EXACT OUTPUT STRUCTURE (the values are placeholders, do not copy 
   {{"category": "Removal Tag", "status": "Incomplete", "comments": "Findings for the removal tag."}},
   {{"category": "Workshop Report", "status": "No", "comments": "Findings for the workshop report."}},
   {{"category": "NIS/ICS", "status": "Discrepancy", "comments": "Findings for the NIS/ICS."}},
-  {{"category": "Commercial Trace", "status": "Incomplete", "comments": "Findings for the commercial trace."}},
-  {{"category": "ATA Spec 106", "status": "Yes", "comments": "Findings for the ATA Spec 106."}}
+  {{"category": "Commercial Trace", "status": "Incomplete", "comments": "Findings for the commercial trace."}}
 ]
 
 CRITICAL: Output ONLY the raw JSON array. No markdown code fences, no introductory text, no text after the array.
