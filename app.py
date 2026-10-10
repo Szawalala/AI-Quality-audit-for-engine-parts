@@ -485,7 +485,9 @@ def _queue_prompt(pending_key, text):
 def _clear_chat(chat_key):
     st.session_state[chat_key] = []
 
-
+def _toggle_chat(open_key):
+    st.session_state[open_key] = not st.session_state.get(open_key, False)
+    
 def get_chat_files(client, files_payload_list, chat_id, force=False):
     """Sube los documentos una sola vez por auditoria y reutiliza las referencias en cada mensaje."""
     cache = st.session_state.setdefault("gemini_file_cache", {})
@@ -551,11 +553,21 @@ def render_audit_chat(client, files_payload_list, report_html, part_number, vend
     """
     chat_key = f"chat_{chat_id}"
     pending_key = f"{chat_key}_pending"
+    open_key = f"{chat_key}_open"
     messages = st.session_state.setdefault(chat_key, [])
+    is_open = st.session_state.get(open_key, False)
 
     st.markdown("---")
-    col_title, col_new = st.columns([6, 1], vertical_alignment="center")
+    col_title, col_toggle, col_new = st.columns([4, 1, 1], vertical_alignment="center")
     col_title.markdown("### Assistant")
+    col_toggle.button("Close" if is_open else "Open assistant", key=f"toggle_chat_{chat_id}",
+                      type="secondary" if is_open else "primary",
+                      on_click=_toggle_chat, args=(open_key,), use_container_width=True)
+
+    if not is_open:
+        st.caption("Ask questions about this audit or draft an email to the vendor.")
+        return
+
     if messages:
         col_new.button("New chat", key=f"new_chat_{chat_id}", on_click=_clear_chat,
                        args=(chat_key,), use_container_width=True)
@@ -700,6 +712,11 @@ with col_title:
 # Se usa un selector horizontal (con estilo de pestanas) en lugar de st.tabs porque st.chat_input
 # solo queda fijado abajo del todo si esta en el nivel raiz de la pagina.
 page = st.radio("Section", PAGES, horizontal=True, label_visibility="collapsed", key="page")
+# Al cambiar de seccion se cierran los asistentes (evita que la vista salte al final de la pagina)
+if st.session_state.get("_last_page") != page:
+    st.session_state["_last_page"] = page
+    for _k in [k for k in st.session_state if k.startswith("chat_") and k.endswith("_open")]:
+        st.session_state[_k] = False
 
 
 # =====================================================================
