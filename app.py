@@ -485,8 +485,6 @@ def _queue_prompt(pending_key, text):
 def _clear_chat(chat_key):
     st.session_state[chat_key] = []
 
-def _toggle_chat(open_key):
-    st.session_state[open_key] = not st.session_state.get(open_key, False)
     
 def get_chat_files(client, files_payload_list, chat_id, force=False):
     """Sube los documentos una sola vez por auditoria y reutiliza las referencias en cada mensaje."""
@@ -555,14 +553,11 @@ def render_audit_chat(client, files_payload_list, report_html, part_number, vend
     pending_key = f"{chat_key}_pending"
     open_key = f"{chat_key}_open"
     messages = st.session_state.setdefault(chat_key, [])
-    is_open = st.session_state.get(open_key, False)
-
+    
     st.markdown("---")
     col_title, col_toggle, col_new = st.columns([4, 1, 1], vertical_alignment="center")
     col_title.markdown("### Assistant")
-    col_toggle.button("Close" if is_open else "Open assistant", key=f"toggle_chat_{chat_id}",
-                      type="secondary" if is_open else "primary",
-                      on_click=_toggle_chat, args=(open_key,), use_container_width=True)
+    is_open = col_toggle.toggle("Open assistant", key=open_key)
 
     if not is_open:
         st.caption("Ask questions about this audit or draft an email to the vendor.")
