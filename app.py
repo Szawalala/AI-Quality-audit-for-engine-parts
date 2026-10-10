@@ -19,6 +19,7 @@ from utils import (
     estimate_report_height,
     report_to_text,
 )
+from html import escape
 
 MODEL_NAME = "gemini-3.5-flash"
 MAX_AUDIT_SECONDS = 600          # tiempo maximo de espera de una auditoria
@@ -199,27 +200,35 @@ st.markdown("""
             box-shadow: 0 4px 14px rgba(220, 38, 38, 0.4) !important;
         }
 
-        /* ---------- Metric cards ---------- */
-        [data-testid="stMetric"] {
+        
+        /* ---------- Cabecera del registro (historial) ---------- */
+        .st-key-record_header {
             background-color: var(--card);
             border: 1px solid var(--border);
             border-left: 4px solid var(--green);
             border-radius: var(--radius);
-            padding: 12px 16px;
+            padding: 16px 20px;
             box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
         }
-        [data-testid="stMetricLabel"] p {
-            color: var(--muted) !important;
-            font-size: 0.75rem !important;
+        .rec-label {
+            display: block;
+            color: var(--muted);
+            font-size: 0.7rem;
+            font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
-        [data-testid="stMetricValue"] {
+        .rec-title {
             color: var(--navy);
-            font-size: 1.25rem !important;
+            font-size: 1.6rem;
             font-weight: 700;
+            letter-spacing: -0.01em;
+            line-height: 1.2;
+            margin-bottom: 12px;
+            word-break: break-word;
         }
-
+        .rec-fields { display: flex; flex-wrap: wrap; gap: 8px 40px; }
+        .rec-value { display: block; color: var(--text); font-size: 0.98rem; font-weight: 600; }
         /* ---------- Expander ---------- */
         [data-testid="stExpander"] {
             background-color: var(--card);
@@ -708,7 +717,7 @@ if page == PAGES[0]:
         vendor = st.text_input("Vendor / Seller", placeholder="e.g. Lufthansa Technik AG")
 
     uploaded_files = st.file_uploader(
-        "Upload paperwork (Form 1 / FAA 8130-3, Removal Tag, Workshop Report, NIS/ICS, Commercial Trace, ATA Spec 106)",
+        "Upload paperwork",
         type=["pdf", "png", "jpg", "jpeg"],
         accept_multiple_files=True,
         key="upload_new"
@@ -793,18 +802,22 @@ else:
 
         st.markdown("---")
 
-        col_a, col_b, col_c, col_d, col_e = st.columns([2, 2, 2, 2, 1], vertical_alignment="bottom")
-        with col_a:
-            st.metric("Project Name", record["project_name"])
-        with col_b:
-            st.metric("Part Number", record["part_number"])
-        with col_c:
-            st.metric("Vendor", record.get("vendor", "N/A"))
-        with col_d:
-            st.metric("Date", record["date"])
-        with col_e:
-            if st.button("Delete", key="delete_audit", use_container_width=True):
-                confirm_delete_dialog(rid, f"{record['project_name']} | P/N {record['part_number']}")
+        with st.container(key="record_header"):
+            col_info, col_del = st.columns([6, 1], vertical_alignment="center")
+            with col_info:
+                st.markdown(
+                    '<div class="rec-label">Part Number</div>'
+                    f'<div class="rec-title">{escape(record["part_number"])}</div>'
+                    '<div class="rec-fields">'
+                    f'<div><span class="rec-label">Project</span><span class="rec-value">{escape(record["project_name"])}</span></div>'
+                    f'<div><span class="rec-label">Vendor</span><span class="rec-value">{escape(record.get("vendor", "N/A"))}</span></div>'
+                    f'<div><span class="rec-label">Date</span><span class="rec-value">{escape(record["date"])}</span></div>'
+                    '</div>',
+                    unsafe_allow_html=True
+                )
+            with col_del:
+                if st.button("Delete", key="delete_audit", use_container_width=True):
+                    confirm_delete_dialog(rid, f"{record['project_name']} | P/N {record['part_number']}")
 
         
         # ---------- Editar datos ----------
