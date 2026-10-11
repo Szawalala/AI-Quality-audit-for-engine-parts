@@ -10,12 +10,12 @@ def require_login():
         st.session_state.authenticated = False
 
     if not st.session_state.authenticated:
-        @st.dialog("Acceso restringido - Kaito Aero")
+        @st.dialog("TRR AI Tool - Access Restricted")
         def login_dialog():
-            st.write("Introduce la contraseña para acceder a la herramienta TRR.")
+            st.write("Please introduce the password.")
             with st.form("login_form", clear_on_submit=False):
-                user_pass = st.text_input("Contraseña", type="password", key="pass_input")
-                submit = st.form_submit_button("Ingresar", use_container_width=True, type="primary")
+                user_pass = st.text_input("Password", type="password", key="pass_input")
+                submit = st.form_submit_button("Login", use_container_width=True, type="primary")
                 if submit:
                     if user_pass == acceso_password:
                         st.session_state.authenticated = True
