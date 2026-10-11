@@ -9,6 +9,7 @@ import tempfile
 import traceback
 
 from config import MODEL_NAME
+from config import CHAT_MODEL_NAME
 from files_util import decode_file, files_signature
 from reports import build_modern_html_report
 
@@ -111,7 +112,7 @@ def chat_stream(client, files_payload_list, chat_id, prompt_text, cache):
         try:
             files = get_chat_files(client, files_payload_list, chat_id, cache, force=(attempt == 1))
             for chunk in client.models.generate_content_stream(
-                model=MODEL_NAME, contents=files + [prompt_text]
+                model=CHAT_MODEL_NAME, contents=files + [prompt_text]
             ):
                 if chunk.text:
                     started = True
