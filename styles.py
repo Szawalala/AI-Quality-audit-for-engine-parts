@@ -234,7 +234,7 @@ STYLES_HTML = """
         }
         [data-testid="stChatInput"]:focus-within {
             border-color: var(--green) !important;
-            box-shadow: 0 0 0 3px rgba(46, 204, 143, 0.18);
+            box-shadow: none;
         }
         [data-testid="stChatInput"] textarea { background: transparent !important; }
         [data-testid="stChatInputSubmitButton"] {
