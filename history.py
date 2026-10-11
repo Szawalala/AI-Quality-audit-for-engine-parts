@@ -53,6 +53,7 @@ def save_analysis(part_number, project_name, vendor, files_payload, report_html,
                 item["metrics"] = metrics_text
                 item["date"] = datetime.now().strftime("%Y-%m-%d")
                 break
+        result_id = record_id
     else:
         new_entry = {
             "id": datetime.now().strftime("%Y%m%d_%H%M%S"),
@@ -66,8 +67,10 @@ def save_analysis(part_number, project_name, vendor, files_payload, report_html,
             "metrics": metrics_text
         }
         history.insert(0, new_entry)
+        result_id = new_entry["id"]
 
     _write_history(history)
+    return result_id
 
 
 def delete_analysis(record_id):

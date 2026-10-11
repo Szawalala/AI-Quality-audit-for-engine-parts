@@ -219,7 +219,7 @@ STYLES_HTML = """
         [data-testid="stChatMessageContent"] { color: var(--text); line-height: 1.6; }
 
         /* Panel del chat y caja de entrada (en linea, dentro del panel) */
-        .st-key-chat_panel {
+        [class*="st-key-chat_panel"] {
             background-color: var(--card);
             border: 1px solid var(--border);
             border-radius: var(--radius);

@@ -5,9 +5,7 @@ import streamlit as st
 from google import genai
 
 from auth import require_login
-from config import PAGES
-from page_history import render_history_page
-from page_new import render_new_analysis_page
+from page_history import render_audits_page
 from styles import inject_styles
 
 # --- CONFIGURACION DE PAGINA (debe ser la primera llamada a Streamlit) ---
@@ -50,11 +48,5 @@ with col_title:
         unsafe_allow_html=True
     )
 
-# --- NAVEGACION ---
-tab_new, tab_hist = st.tabs(PAGES)
-
-with tab_new:
-    render_new_analysis_page(client)
-
-with tab_hist:
-    render_history_page(client)
+# --- PAGINA UNICA: lista de auditorias; el formulario de nuevo analisis se abre desde ella ---
+render_audits_page(client)

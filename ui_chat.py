@@ -38,7 +38,8 @@ def render_audit_chat(client, files_payload_list, report_html, part_number, vend
         col_new.button("New chat", key=f"new_chat_{chat_id}", on_click=_clear_chat,
                        args=(chat_key,), use_container_width=True)
 
-    with st.container(key="chat_panel"):
+    # Clave unica por chat (Streamlit no admite dos contenedores con la misma clave)
+    with st.container(key=f"chat_panel_{chat_id}"):
         box = st.container(height=CHAT_HEIGHT, border=False)
         typed = st.chat_input("Ask anything about this audit...", key=f"chat_input_{chat_id}")
 
