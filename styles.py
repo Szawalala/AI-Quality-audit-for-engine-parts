@@ -226,24 +226,6 @@ STYLES_HTML = """
             padding: 14px 18px 18px 18px;
             box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
         }
-        [data-testid="stChatInput"] {
-            border: 1px solid var(--navy) !important;
-            border-radius: 26px !important;
-            background: var(--card) !important;
-            box-shadow: none !important;
-        }
-        [data-testid="stChatInput"] [data-baseweb] {
-            border: none !important;
-            box-shadow: none !important;
-            background: transparent !important;
-        }
-        [data-testid="stChatInput"] textarea { background: transparent !important; }
-        [data-testid="stChatInputSubmitButton"] {
-            background: var(--navy) !important;
-            color: #ffffff !important;
-            border-radius: 50% !important;
-        }
-        [data-testid="stChatInputSubmitButton"]:hover { background: var(--green-dark) !important; }
 
         .chat-empty {
             text-align: center;
