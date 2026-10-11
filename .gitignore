@@ -1,0 +1,16 @@
+# Secretos (nunca subir)
+.streamlit/secrets.toml
+secrets.toml
+
+# Historial local: los datos pasarán a Google Drive
+analysis_history.json
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Sistema
+.DS_Store
+Thumbs.db
