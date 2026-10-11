@@ -16,7 +16,7 @@ from utils import (
     delete_analysis,
     update_analysis_details,
     build_modern_html_report,
-    estimate_report_height,
+    report_for_markdown,
     report_to_text,
 )
 from html import escape
@@ -77,7 +77,7 @@ st.markdown("""
         [data-testid="stHeader"], [data-testid="stSidebar"] { display: none !important; }
         .block-container {
             padding-top: 1.2rem !important;
-            padding-bottom: 8rem !important;   /* espacio para la caja de chat fija abajo */
+            padding-bottom: 3rem !important;
             max-width: 1280px;
         }
 
@@ -207,7 +207,7 @@ st.markdown("""
             border: 1px solid var(--border);
             border-left: 4px solid var(--green);
             border-radius: var(--radius);
-            padding: 16px 20px;
+            padding: 22px 24px 24px 24px;
             box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
         }
         .rec-label {
@@ -267,19 +267,23 @@ st.markdown("""
         }
         [data-testid="stChatMessageContent"] { color: var(--text); line-height: 1.6; }
 
-        /* Caja de entrada fija abajo, estilo ChatGPT / Gemini */
-        [data-testid="stBottom"] > div {
-            background: linear-gradient(to top, var(--bg) 65%, rgba(245, 247, 251, 0)) !important;
+        /* Panel del chat y caja de entrada (en linea, dentro del panel) */
+        .st-key-chat_panel {
+            background-color: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 14px 18px 18px 18px;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
         }
         [data-testid="stChatInput"] {
             border-radius: 26px !important;
             border: 1px solid var(--border) !important;
             background: var(--card) !important;
-            box-shadow: 0 4px 18px rgba(20, 48, 90, 0.10);
+            box-shadow: none;
         }
         [data-testid="stChatInput"]:focus-within {
             border-color: var(--green) !important;
-            box-shadow: 0 4px 18px rgba(46, 204, 143, 0.18);
+            box-shadow: 0 0 0 3px rgba(46, 204, 143, 0.18);
         }
         [data-testid="stChatInput"] textarea { background: transparent !important; }
         [data-testid="stChatInputSubmitButton"] {
@@ -296,6 +300,72 @@ st.markdown("""
             font-size: 1.05rem;
             font-weight: 500;
         }
+
+        /* ---------- Tabla del informe (HTML nativo, sin iframe) ---------- */
+        .modern-table-container {
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(20, 48, 90, 0.08);
+            border: 1px solid #e3e8ef;
+            margin: 2px 0 10px 0;
+            overflow: hidden;
+            background-color: #ffffff;
+        }
+        .modern-table-container table.modern-table {
+            display: table !important;
+            width: 100% !important;
+            border-collapse: collapse !important;
+            border: none !important;
+            margin: 0 !important;
+            text-align: left;
+            font-size: 14px;
+            color: #374151;
+        }
+        .modern-table-container .modern-table thead { background-color: #14305a !important; }
+        .modern-table-container .modern-table th {
+            background-color: #14305a !important;
+            color: #ffffff !important;
+            padding: 12px 16px !important;
+            font-weight: 600 !important;
+            text-transform: uppercase;
+            font-size: 11px !important;
+            letter-spacing: 0.05em;
+            text-align: left !important;
+            border: none !important;
+        }
+        .modern-table-container .modern-table td {
+            padding: 14px 16px !important;
+            border: none !important;
+            border-bottom: 1px solid #f3f4f6 !important;
+            vertical-align: top !important;
+            line-height: 1.5;
+            font-size: 14px !important;
+            background-color: transparent !important;
+            color: #374151;
+        }
+        .modern-table-container .modern-table tbody tr:last-child td { border-bottom: none !important; }
+        .modern-table-container .modern-table tbody tr:hover td { background-color: #f5f9ff !important; }
+        .modern-table-container .modern-table td.doc-title { font-weight: 700 !important; color: #14305a !important; }
+        .modern-table-container .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+            gap: 6px;
+        }
+        .modern-table-container .badge::before {
+            content: "";
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background-color: currentColor;
+        }
+        .modern-table-container .badge-yes { background-color: #dcfce7; color: #166534; }
+        .modern-table-container .badge-discrepancy,
+        .modern-table-container .badge-incomplete { background-color: #fef3c7; color: #92400e; }
+        .modern-table-container .badge-no { background-color: #fee2e2; color: #991b1b; }
 
         /* ---------- Captions ---------- */
         [data-testid="stCaptionContainer"] { color: var(--muted); }
@@ -545,32 +615,33 @@ def chat_stream(client, files_payload_list, chat_id, prompt_text):
 
 def render_audit_chat(client, files_payload_list, report_html, part_number, vendor, chat_id):
     """
-    Chat estilo ChatGPT / Gemini: mensajes en una zona con scroll y caja de entrada fija abajo.
-    IMPORTANTE: st.chat_input solo se fija al borde inferior de la pantalla si se llama en el
-    nivel raiz de la pagina (no dentro de pestanas, columnas ni contenedores).
+    Chat estilo ChatGPT / Gemini dentro de un panel: zona de mensajes con scroll y, justo debajo,
+    la caja de entrada.
+
+    La caja (st.chat_input) se coloca DENTRO de un contenedor a proposito: asi se muestra en linea,
+    debajo de los mensajes. Si se llamara en el nivel raiz de la pagina, Streamlit la fijaria al
+    borde inferior de la pantalla y llevaria la vista al final de la pagina al cargarla.
+
+    La unica sugerencia (EMAIL_SUGGESTION) usa su propio prompt (EMAIL_PROMPT_TEMPLATE); el resto
+    de mensajes pasan por build_chat_prompt.
     """
     chat_key = f"chat_{chat_id}"
     pending_key = f"{chat_key}_pending"
-    open_key = f"{chat_key}_open"
     messages = st.session_state.setdefault(chat_key, [])
-    
+
     st.markdown("---")
-    col_title, col_toggle, col_new = st.columns([4, 1, 1], vertical_alignment="center")
+    col_title, col_new = st.columns([6, 1], vertical_alignment="center")
     col_title.markdown("### Assistant")
-    is_open = col_toggle.toggle("Open assistant", key=open_key)
-
-    if not is_open:
-        st.caption("Ask questions about this audit or draft an email to the vendor.")
-        return
-
     if messages:
         col_new.button("New chat", key=f"new_chat_{chat_id}", on_click=_clear_chat,
                        args=(chat_key,), use_container_width=True)
 
-    typed = st.chat_input("Ask anything about this audit...", key=f"chat_input_{chat_id}")
+    with st.container(key="chat_panel"):
+        box = st.container(height=CHAT_HEIGHT, border=False)
+        typed = st.chat_input("Ask anything about this audit...", key=f"chat_input_{chat_id}")
+
     prompt = typed or st.session_state.pop(pending_key, None)
 
-    box = st.container(height=CHAT_HEIGHT, border=False)
     with box:
         if not messages and not prompt:
             st.markdown("<div class='chat-empty'>How can I help with this audit?</div>", unsafe_allow_html=True)
@@ -624,8 +695,8 @@ def render_audit_chat(client, files_payload_list, report_html, part_number, vend
 # =====================================================================
 def render_report(report_html, metrics):
     st.markdown("### Audit Report")
-    st.components.v1.html(report_html, height=estimate_report_height(report_html), scrolling=True)
-    if metrics:
+    st.markdown(report_for_markdown(report_html), unsafe_allow_html=True)
+    if metrics and st.secrets.get("SHOW_DEBUG", False):
         st.caption(metrics)
 
 
@@ -704,20 +775,15 @@ with col_title:
         unsafe_allow_html=True
     )
 
-# Se usa un selector horizontal (con estilo de pestanas) en lugar de st.tabs porque st.chat_input
-# solo queda fijado abajo del todo si esta en el nivel raiz de la pagina.
-page = st.radio("Section", PAGES, horizontal=True, label_visibility="collapsed", key="page")
-# Al cambiar de seccion se cierran los asistentes (evita que la vista salte al final de la pagina)
-if st.session_state.get("_last_page") != page:
-    st.session_state["_last_page"] = page
-    for _k in [k for k in st.session_state if k.startswith("chat_") and k.endswith("_open")]:
-        st.session_state[_k] = False
+# Selector horizontal con estilo de pestanas: solo se ejecuta la seccion activa
+# (con st.tabs se ejecutarian ambas en cada interaccion).
+tab_new, tab_hist = st.tabs(PAGES)
 
 
 # =====================================================================
 #  PAGINA 1: NUEVO ANALISIS
 # =====================================================================
-if page == PAGES[0]:
+with tab_new:
     st.markdown("### Launch New Audit")
 
     col1, col2, col3 = st.columns(3)
@@ -786,7 +852,7 @@ if page == PAGES[0]:
 # =====================================================================
 #  PAGINA 2: HISTORIAL
 # =====================================================================
-else:
+with tab_hist:
     st.markdown("### Saved Audits")
     history_data = load_history()
 

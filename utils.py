@@ -9,8 +9,10 @@ HISTORY_FILE = "analysis_history.json"
 
 def build_modern_html_report(json_data_input):
     """
-    Procesa la respuesta de Gemini (lista o diccionario) y construye la tabla HTML moderna.
-    Incluye script JS con ResizeObserver para auto-ajustar la altura en Streamlit sin huecos ni cortes.
+    Procesa la respuesta de Gemini (lista o diccionario) y construye la tabla HTML del informe.
+    Devuelve solo la estructura (sin <style> ni <script>): el aspecto de la tabla vive en el CSS
+    de la app (clases .modern-table-container, .modern-table, .badge...) y se dibuja directamente
+    en la pagina con st.markdown.
     """
     data = []
     
@@ -42,23 +44,7 @@ def build_modern_html_report(json_data_input):
             html_content = data["html"]
             # Extraer las filas si es una tabla HTML
             if "<table" in html_content or "<tr" in html_content:
-                # Retornar el wrapper dinámico con el contenido extraído
-                return f"""
-                <div id="table-wrapper">
-                    <style>
-                        html, body {{ margin: 0; padding: 0; font-family: -apple-system, sans-serif; }}
-                    </style>
-                    {html_content}
-                </div>
-                <script>
-                    function sendH() {{
-                        const el = document.getElementById('table-wrapper');
-                        if (el) window.parent.postMessage({{ type: 'streamlit:setFrameHeight', height: el.offsetHeight + 20 }}, '*');
-                    }}
-                    window.addEventListener('load', sendH);
-                    setTimeout(sendH, 100);
-                </script>
-                """
+                return html_content
 
         # Si devolvió {"categories": [...]} o {"results": [...]}
         for key in ["categories", "audit", "results", "documents", "data"]:
@@ -86,153 +72,50 @@ def build_modern_html_report(json_data_input):
     for item in data:
         if not isinstance(item, dict):
             continue
-            
+
         cat = item.get("category", item.get("document", item.get("doc", "N/A")))
         status = str(item.get("status", "No")).strip()
         comments = str(item.get("comments", item.get("finding", ""))).strip()
-        
+
         badge_class = status_class_map.get(status, "badge-no")
-        
-        rows_html += f"""
-      <tr>
-        <td class="doc-title">{cat}</td>
-        <td><span class="badge {badge_class}">{status}</span></td>
-        <td>{comments}</td>
-      </tr>"""
 
-    return f"""
-<div id="table-wrapper">
-  <style>
-    html, body {{
-      margin: 0;
-      padding: 0;
-      background-color: transparent;
-      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    }}
+        # Se escapa el texto: el informe se inserta directamente en la pagina
+        rows_html += (
+            "<tr>"
+            f'<td class="doc-title">{html_lib.escape(str(cat))}</td>'
+            f'<td><span class="badge {badge_class}">{html_lib.escape(status)}</span></td>'
+            f"<td>{html_lib.escape(comments)}</td>"
+            "</tr>"
+        )
 
-    .modern-table-container {{
-      border-radius: 12px;
-      box-shadow: 0 4px 16px rgba(20, 48, 90, 0.08);
-      border: 1px solid #e3e8ef;
-      margin: 2px 0 10px 0;
-      overflow: hidden;
-      background-color: #ffffff;
-    }}
+    return (
+        '<div class="modern-table-container">'
+        '<table class="modern-table">'
+        "<thead><tr>"
+        '<th style="width: 18%;">Documents</th>'
+        '<th style="width: 14%;">Available</th>'
+        '<th style="width: 68%;">Comments</th>'
+        "</tr></thead>"
+        f"<tbody>{rows_html}</tbody>"
+        "</table></div>"
+    )
 
-    .modern-table {{
-      width: 100%;
-      border-collapse: collapse;
-      text-align: left;
-      font-size: 14px;
-      color: #374151;
-    }}
 
-    .modern-table thead {{
-      background-color: #14305a;
-    }}
-
-    .modern-table th {{
-      padding: 12px 16px;
-      font-weight: 600;
-      color: #ffffff;
-      text-transform: uppercase;
-      font-size: 11px;
-      letter-spacing: 0.05em;
-    }}
-
-    .modern-table td {{
-      padding: 14px 16px;
-      border-bottom: 1px solid #f3f4f6;
-      vertical-align: top;
-      line-height: 1.5;
-    }}
-
-    .modern-table tbody tr:last-child td {{
-      border-bottom: none;
-    }}
-
-    .modern-table tbody tr:hover {{
-      background-color: #f5f9ff;
-    }}
-
-    .badge {{
-      display: inline-flex;
-      align-items: center;
-      padding: 4px 10px;
-      border-radius: 9999px;
-      font-size: 12px;
-      font-weight: 600;
-      white-space: nowrap;
-      gap: 6px;
-    }}
-    .badge::before {{
-      content: "";
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background-color: currentColor;
-    }}
-
-    .badge-yes {{ background-color: #dcfce7; color: #166534; }}
-    .badge-discrepancy, .badge-incomplete {{ background-color: #fef3c7; color: #92400e; }}
-    .badge-no {{ background-color: #fee2e2; color: #991b1b; }}
-    .doc-title {{ font-weight: 700; color: #14305a; }}
-  </style>
-
-  <div class="modern-table-container">
-    <table class="modern-table">
-      <thead>
-        <tr>
-          <th style="width: 18%;">Documents</th>
-          <th style="width: 14%;">Available</th>
-          <th style="width: 68%;">Comments</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows_html}
-      </tbody>
-    </table>
-  </div>
-</div>
-
-<script>
-  function updateHeight() {{
-    const wrapper = document.getElementById('table-wrapper');
-    if (wrapper) {{
-      const height = wrapper.offsetHeight + 15;
-      window.parent.postMessage({{
-        type: 'streamlit:setFrameHeight',
-        height: height
-      }}, '*');
-    }}
-  }}
-  window.addEventListener('load', updateHeight);
-  window.addEventListener('resize', updateHeight);
-  setTimeout(updateHeight, 50);
-  setTimeout(updateHeight, 200);
-</script>
-"""
-
-def estimate_report_height(report_html, chars_per_line=100, line_px=21, row_padding=30,
-                           header_px=48, extra_px=40, min_px=200):
+def report_for_markdown(report_html):
     """
-    Estima la altura (px) necesaria para mostrar la tabla del informe dentro de
-    st.components.v1.html, que no se autoajusta. Se calcula a partir del texto de
-    cada fila de comentarios; es conservador (mejor que sobre a que se corte).
+    Prepara el HTML guardado de un informe para mostrarlo directamente con st.markdown.
+
+    Los informes guardados antes de este cambio llevan su propio <style> (con reglas globales como
+    "html, body") y un <script> de autoajuste de altura: ambos se eliminan, porque el estilo de la
+    tabla ahora vive en el CSS de la app. Ademas se compacta el HTML para que Markdown no lo trate
+    como bloque de codigo (por la indentacion) ni lo corte en las lineas en blanco.
     """
     if not isinstance(report_html, str):
-        return 400
-    rows = re.findall(
-        r'<tr>\s*<td class="doc-title">.*?</td>\s*<td>.*?</td>\s*<td>(.*?)</td>\s*</tr>',
-        report_html, flags=re.S)
-    if not rows:
-        return 450
-    total = header_px + extra_px
-    for comment in rows:
-        text = re.sub(r"<[^>]+>", "", comment)
-        lines = max(1, -(-len(text) // chars_per_line))  # ceil
-        total += lines * line_px + row_padding
-    return max(min_px, total)
+        return ""
+    s = re.sub(r"<style.*?</style>", "", report_html, flags=re.S | re.I)
+    s = re.sub(r"<script.*?</script>", "", s, flags=re.S | re.I)
+    s = re.sub(r">\s+<", "><", s)
+    return re.sub(r"\s+", " ", s).strip()
 
 
 def report_to_text(report_html):
