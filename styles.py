@@ -227,14 +227,10 @@ STYLES_HTML = """
             box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
         }
         [data-testid="stChatInput"] {
+            border: 1px solid var(--navy) !important;
             border-radius: 26px !important;
-            border: 1px solid var(--border) !important;
             background: var(--card) !important;
-            box-shadow: none;
-        }
-        [data-testid="stChatInput"]:focus-within {
-            border-color: var(--green) !important;
-            box-shadow: none;
+            box-shadow: none !important;
         }
         [data-testid="stChatInput"] [data-baseweb] {
             border: none !important;
