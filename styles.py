@@ -236,6 +236,11 @@ STYLES_HTML = """
             border-color: var(--green) !important;
             box-shadow: none;
         }
+        [data-testid="stChatInput"] [data-baseweb] {
+            border: none !important;
+            box-shadow: none !important;
+            background: transparent !important;
+        }
         [data-testid="stChatInput"] textarea { background: transparent !important; }
         [data-testid="stChatInputSubmitButton"] {
             background: var(--navy) !important;
